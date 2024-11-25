@@ -16,49 +16,55 @@ Implement an output parser to extract structured results from the model's respon
 ### PROGRAM:
 ````
 from langchain.prompts import PromptTemplate
-from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 
-# Define the prompt template with two parameters
-prompt = PromptTemplate(
-    input_variables=["topic", "context"],
-    template="Write a summary about {topic} based on the following context: {context}"
+# Step 1: Define Parameters and Prompt Template
+prompt_template = PromptTemplate(
+    input_variables=["topic", "length"],
+    template=(
+        "You are a helpful assistant. Please provide the following in valid JSON format:\n"
+        "- A concise summary of {topic}.\n"
+        "- The word count of the summary.\n\n"
+        "Response should look like this:\n"
+        "{{\n"
+        '  "summary": "Your concise summary here.",\n'
+        '  "word_count": 123\n'
+        "}}\n\n"
+        "Write a {length}-word summary about {topic}. Be concise and factual."
+    )
 )
 
-# Initialize the language model
-llm = OpenAI(model="text-davinci-003", temperature=0.7)
-
-# Define the response schema for the output parser
+# Step 2: Define the Output Parser
 response_schemas = [
-    ResponseSchema(name="summary", description="A concise summary of the topic"),
-    ResponseSchema(name="key_points", description="Main points covered in the summary")
+    ResponseSchema(name="summary", description="A concise summary of the topic."),
+    ResponseSchema(name="word_count", description="The number of words in the summary."),
 ]
-
 output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
 
-# Example function to evaluate the LCEL expression
-def evaluate_expression(topic, context):
-    # Generate the prompt with input parameters
-    formatted_prompt = prompt.format(topic=topic, context=context)
-    
-    # Get the response from the LLM
-    raw_output = llm(formatted_prompt)
-    
-    # Parse the output into a structured format
-    parsed_output = output_parser.parse(raw_output)
-    
-    return parsed_output
+# Step 3: Create the LangChain LLM Chain with Gemini Model
+API_KEY = "**************************"
+llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3, google_api_key=API_KEY)
 
-# Example usage
-if __name__ == "__main__":
-    topic = "Artificial Intelligence"
-    context = "Artificial Intelligence is a field of study focusing on creating machines capable of mimicking human intelligence. It includes machine learning, robotics, and natural language processing."
-    result = evaluate_expression(topic, context)
-    print("LCEL Expression Output:")
-    print(result)
+chain = LLMChain(prompt=prompt_template, llm=llm, output_parser=output_parser)
+
+# Step 4: Execute the Chain with Examples
+examples = [
+    {"topic": "Climate Change", "length": "50"},
+    {"topic": "Artificial Intelligence", "length": "30"},
+]
+
+for example in examples:
+    try:
+        result = chain.run(example)
+        print(f"Input: {example}")
+        print(f"Output: {result}\n")
+    except Exception as e:
+        print(f"Error for input {example}: {e}\n")
 ````
 ### OUTPUT:
-![image](https://github.com/user-attachments/assets/0f25f97d-3334-4bd4-abb4-53c5b5883651)
+![image](https://github.com/user-attachments/assets/3aa96ce0-3c45-49f3-adb0-0202c6df8deb)
 
 ### RESULT:
 Hence,the program to design and implement a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and to evaluate its functionality by analyzing relevant examples of its application in real-world scenarios is written and successfully executed.
